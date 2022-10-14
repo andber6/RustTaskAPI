@@ -28,9 +28,9 @@ async fn main() -> std::io::Result<()> {
         );
         let ddb_data = Data::new(ddb_repo);
         let logger = Logger::default();
-        App:new()
+        App::new()
         .wrap(logger)
-        .app_data()
+        .app_data(ddb_data)
         .service(get_task)
         .service(submit_task)
         .service(fail_task)

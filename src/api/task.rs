@@ -30,7 +30,7 @@ pub struct TaskCompletitionRequest {
 #[derive(Deserialize)]
 pub struct SubmitTaskRequest {
     user_id: String,
-    task_typep: String,
+    task_type: String,
     source_file: String
 }
 
@@ -43,7 +43,7 @@ pub enum TaskError {
 }
 
 impl ResponseError for TaskError {
-    fn erorr_response(&self) -> HttpResponse {
+    fn error_response(&self) -> HttpResponse {
         HttpResponse::build(self.status_code())
         .insert_header(ContentType::json())
         .body(self.to_string())
@@ -76,7 +76,7 @@ pub async fn submit_task(
     ddb_repo: Data<DDBRepository>,
     request: Json<SubmitTaskRequest>
 ) -> Result<Json<TaskIdentifier>, TaskError> {
-    let task = Task::new(
+    let task = Task::new (
         request.user_id.clone(),
         request.task_type.clone(),
         request.source_file.clone()
@@ -129,6 +129,32 @@ pub async fn start_task(
     ).await
 }
 
+#[put("/task/{task_global_id}/pause")]
+pub async fn pause_task(
+    ddb_repo: Data<DDBRepository>, 
+    task_identifier: Path<TaskIdentifier>
+) -> Result<Json<TaskIdentifier>, TaskError> {
+    state_transition(
+        ddb_repo, 
+        task_identifier.into_inner().task_global_id, 
+        TaskState::Paused, 
+        None
+    ).await
+}
+
+#[put("/task/{task_global_id}/fail")]
+pub async fn fail_task(
+    ddb_repo: Data<DDBRepository>, 
+    task_identifier: Path<TaskIdentifier>
+) -> Result<Json<TaskIdentifier>, TaskError> {
+    state_transition(
+        ddb_repo, 
+        task_identifier.into_inner().task_global_id, 
+        TaskState::Failed, 
+        None
+    ).await
+}
+
 #[put("/task/{task_global_id}/complete")]
 pub async fn complete_task(
     ddb_repo: Data<DDBRepository>,
@@ -139,7 +165,7 @@ pub async fn complete_task(
         ddb_repo,
         task_identifier.into_inner().task_global_id,
         TaskState::Completed,
-        Some(completion_request.result_file.cloe())
+        Some(completion_request.result_file.clone())
     ).await
 }
 
